@@ -1,0 +1,44 @@
+{
+  "name": "itstock-license-server",
+  "version": "1.0.0",
+  "description": "ITStock by Nextendo - License Server API",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "db:migrate": "npx prisma migrate dev",
+    "db:push": "npx prisma db push",
+    "db:seed": "node src/utils/seed.js",
+    "db:studio": "npx prisma studio",
+    "generate:secret": "node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\"",
+    "generate:license": "node -e \"const crypto=require('crypto');const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';const groups=[];for(let i=0;i<4;i++){let g='';for(let j=0;j<4;j++)g+=chars[Math.floor(Math.random()*chars.length)];groups.push(g);}const base='ITSTOCK-'+groups.join('-');const checksum=crypto.createHash('sha256').update(base).digest('hex').substring(0,4).toUpperCase();console.log(base+'-'+checksum);\""
+  },
+  "keywords": [
+    "itstock",
+    "license",
+    "nextendo"
+  ],
+  "author": "Nextendo",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.95.3",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "express-validator": "^7.3.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^8.0.1",
+    "stripe": "^20.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11",
+    "prisma": "^5.22.0"
+  }
+}

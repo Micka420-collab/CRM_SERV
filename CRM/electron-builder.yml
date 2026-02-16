@@ -1,0 +1,49 @@
+appId: com.nextendo.itstock
+productName: ITStock CRM
+copyright: Copyright 2026 Nextendo
+
+directories:
+  output: dist-installer
+  buildResources: build
+
+files:
+  - electron/**/*
+  - server/**/*
+  - "!server/node_modules/.cache/**"
+  - "!server/**/*.db"
+  - "!server/**/*.db-journal"
+  - "!server/.env"
+
+extraResources:
+  - from: client/dist
+    to: client-dist
+    filter:
+      - "**/*"
+  - from: LOGO
+    to: LOGO
+    filter:
+      - "**/*"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  forceCodeSigning: false
+  requestedExecutionLevel: asInvoker
+
+nsis:
+  oneClick: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ITStock CRM
+  perMachine: false
+  allowElevation: true
+
+asar: true
+asarUnpack:
+  - "**/*.node"
+  - "**/node_modules/sqlite3/**/*"
+  - "**/node_modules/bcrypt/**/*"
+nodeGypRebuild: false
+npmRebuild: true

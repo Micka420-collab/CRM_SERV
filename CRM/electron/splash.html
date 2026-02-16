@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ITStock CRM - Chargement</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0f172a;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            -webkit-app-region: drag;
+        }
+
+        .container {
+            text-align: center;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 24px;
+            border-radius: 24px;
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.3);
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+
+        .loader-container {
+            width: 80%;
+            max-width: 300px;
+            height: 4px;
+            background: #1e293b;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .loader-bar {
+            width: 40%;
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            border-radius: 2px;
+            animation: loading 1.5s infinite ease-in-out;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
+            50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(59, 130, 246, 0.4); }
+            100% { transform: scale(1); box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
+        }
+
+        @keyframes loading {
+            0% { margin-left: -40%; }
+            100% { margin-left: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img id="logo-img" src="../LOGO/Favicon.png" class="logo" alt="ITStock Logo">
+        <div class="title">ITSTOCK CRM</div>
+        <div class="subtitle">by Nextendo</div>
+        
+        <div class="loader-container">
+            <div class="loader-bar"></div>
+        </div>
+        
+        <div class="status" id="status-text">Vérification de la licence...</div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        ipcRenderer.on('status-update', (event, message) => {
+            document.getElementById('status-text').innerText = message;
+        });
+
+        ipcRenderer.on('logo-path', (event, path) => {
+            if (path) {
+                document.getElementById('logo-img').src = path;
+            }
+        });
+    </script>
+</body>
+</html>

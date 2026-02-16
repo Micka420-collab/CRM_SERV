@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String         @id @default(cuid())
+  email            String         @unique
+  passwordHash     String
+  name             String?
+  company          String?
+  role             UserRole       @default(CUSTOMER)
+  stripeCustomerId String?        @unique
+  emailVerified    Boolean        @default(false)
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  licenses      License[]
+  subscriptions Subscription[]
+  devices       Device[]       // Appareils avec le CRM installé
+
+  @@map("users")
+}
+
+model Plan {
+  id                   String   @id @default(cuid())
+  name                 String   @unique
+  displayName          String
+  description          String?
+  maxSeats             Int
+  priceMonthly         Int
+  priceYearly          Int
+  stripePriceIdMonthly String?
+  stripePriceIdYearly  String?
+  features             Json     @default("[]")
+  isActive             Boolean  @default(true)
+  sortOrder            Int      @default(0)
+  createdAt            DateTime @default(now())
+
+  licenses      License[]
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model License {
+  id             String        @id @default(cuid())
+  licenseKey     String        @unique
+  userId         String
+  planId         String
+  status         LicenseStatus @default(ACTIVE)
+  maxActivations Int           @default(1)
+  expiresAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan        Plan         @relation(fields: [planId], references: [id])
+  activations Activation[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("licenses")
+}
+
+model Activation {
+  id            String    @id @default(cuid())
+  licenseId     String
+  hardwareId    String
+  machineName   String?
+  ipAddress     String?
+  lastCheckIn   DateTime  @default(now())
+  activatedAt   DateTime  @default(now())
+  deactivatedAt DateTime?
+  isActive      Boolean   @default(true)
+
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@unique([licenseId, hardwareId])
+  @@index([licenseId])
+  @@index([hardwareId])
+  @@map("activations")
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String
+  planId               String
+  stripeSubscriptionId String    @unique
+  status               SubStatus @default(ACTIVE)
+  billingInterval      String    @default("monthly")
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean  @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+// ==================== TABLES DE MISE À JOUR ====================
+
+model AppVersion {
+  id              String   @id @default(cuid())
+  version         String   @unique
+  channel         String   @default("stable") // stable, beta, alpha
+  releaseDate     DateTime @default(now())
+  releaseNotes    String   @db.Text
+  downloadUrl     String
+  size            Int      // Taille en bytes
+  checksum        String   // SHA256 du fichier
+  mandatory       Boolean  @default(false)    // Force la mise à jour
+  minOsVersion    String?  // Version minimale OS requise
+  rolloutPercent  Int      @default(100)      // Pourcentage de déploiement (0-100)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  updateSessions  UpdateSession[]
+  targetDevices   Device[]         // Relation inverse pour targetVersion
+
+  @@index([channel, isActive])
+  @@map("app_versions")
+}
+
+model Device {
+  id              String   @id @default(cuid())
+  userId          String
+  hardwareId      String   @unique
+  machineName     String?
+  osVersion       String?
+  appVersion      String   // Version actuelle installée
+  lastSeen        DateTime @default(now())
+  ipAddress       String?
+  updateStatus    UpdateStatus @default(UP_TO_DATE)
+  targetVersionId String?  // Version cible pour mise à jour forcée
+  forceUpdate     Boolean  @default(false)   // Force update pour ce device
+  updateScheduled DateTime? // Date prévue de mise à jour
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetVersion  AppVersion?     @relation(fields: [targetVersionId], references: [id])
+  updateSessions UpdateSession[]
+
+  @@index([userId])
+  @@index([hardwareId])
+  @@index([updateStatus])
+  @@map("devices")
+}
+
+model UpdateSession {
+  id              String        @id @default(cuid())
+  deviceId        String
+  versionId       String
+  status          UpdateSessionStatus @default(PENDING)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  errorMessage    String?
+  downloadPercent Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  device  Device     @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  version AppVersion @relation(fields: [versionId], references: [id])
+
+  @@index([deviceId])
+  @@index([status])
+  @@map("update_sessions")
+}
+
+model UpdateLog {
+  id          String   @id @default(cuid())
+  deviceId    String
+  fromVersion String
+  toVersion   String
+  status      String   // success, failed, rolled_back
+  errorMsg    String?
+  duration    Int?     // Durée en secondes
+  createdAt   DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([createdAt])
+  @@map("update_logs")
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum LicenseStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  SUSPENDED
+}
+
+enum SubStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
+enum UpdateStatus {
+  UP_TO_DATE
+  UPDATE_AVAILABLE
+  UPDATE_PENDING
+  UPDATE_DOWNLOADING
+  UPDATE_READY
+  UPDATE_FAILED
+  UPDATING
+}
+
+enum UpdateSessionStatus {
+  PENDING
+  DOWNLOADING
+  DOWNLOADED
+  INSTALLING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
