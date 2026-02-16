@@ -3,6 +3,6 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "license-server/Dockerfile",
-    "context": "license-server"
+    "context": "."
   }
 }
